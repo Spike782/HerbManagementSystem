@@ -17,153 +17,6 @@ void CreateKG();
 void ClusterAndClassification();
 
 
-void InsertHerb() {
-    SqList L;
-    OperationStack stack;
-
-    // 初始化线性表和操作栈
-    InitList(L);
-    InitStack(stack);
-
-    string originFilename = "D:/Data-241110/herb.txt";
-    string newFilename = "D:/Data-241110/new_herb.txt";
-
-        // 显示菜单
-        cout << "输入选择：" << endl;
-        cout << "1. 中草药信息增加" << endl;
-        cout << "0. 返回" << endl;
-
-        char choice;
-        cin >> choice;
-
-        if (choice == '0') {
-            system("cls");
-            HerbADM();
-        }
-        else if (choice == '1') {
-            ReadFile(L, originFilename);
-            UpdateOperation(L, stack);
-            if (InsertHerb(L)) {
-                UpdateOperation(L, stack);
-                SaveFile(L, newFilename);
-                ReadFile(L, newFilename);
-                Print(L);
-            }
-            else {
-                cout << "增加失败" << endl;
-            }
-            InsertHerb();
-        }
-        else {
-            cout << "输入有误，请重新输入！" << endl;
-        }
-
-}
-
-void DeleteHerb() {
-    SqList L;
-    OperationStack stack;
-
-    string originFilename = "D:/Data-241110/herb.txt";
-    string newFilename = "D:/Data-241110/new_herb.txt";
-
-    // 初始化线性表和操作栈
-    InitList(L);
-    InitStack(stack);
-    
-    cout << "输入选择：" << endl;
-    cout << "1. 中草药信息删除" << endl;
-    cout << "0. 返回" << endl;
-    char choice;
-    cin >> choice;
-    if (choice == '0') {
-        HerbADM();
-    }
-    else if (choice == '1') {
-        ReadFile(L, originFilename);
-        UpdateOperation(L, stack);
-        cout << "请输入要删除的中草药名称：";
-        char name[100];
-        cin >> name;
- 
-        Herb* herb = DeleteHerb(L, name);
-        if (herb) {
-            UpdateOperation(L, stack);
-            SaveFile(L, newFilename);
-            ReadFile(L, newFilename);
-            if (check(L, name))
-                Print(herb);
-            else
-                cout << "删除失败" << endl;
-        }
-        else {
-            cout << "删除失败" << endl;
-        }
-        FreeList(L);
-        DeleteHerb();
-    }
-    else {
-        cout << "输入有误，请重新输入：" << endl;
-        DeleteHerb();
-    }
-}
-
-void ModifyHerb() {  
-    SqList L;
-    OperationStack stack;
-
-    string originFilename = "D:/Data-241110/herb.txt";
-    string newFilename = "D:/Data-241110/new_herb.txt";
-
-    // 初始化线性表和操作栈
-    InitList(L);
-    InitStack(stack);
-    
-    cout << "输入选择：" << endl;
-    cout << "1. 中草药信息修改" << endl;
-    cout << "0. 返回" << endl;
-    char choice;
-    cin >> choice;
-    if (choice == '0') {
-        HerbADM();
-    }
-    else if (choice == '1') {
-        getchar();
-        char name[100];
-        cout << "请输入要修改的药草名称：";
-        cin >> name;
-        int n;
-        string lines[6];
-        cout << endl;
-        cout << "请输入归经数量：";
-        cin >> n;
-        for (int i = 0; i < n; i++) {
-            cout << "请输入归经：";
-            cin >> lines[i];
-        }
-        ReadFile(L, originFilename);
-        UpdateOperation(L, stack);
-        if (ModifyHerb(L, name, lines, n)) {
-            UpdateOperation(L, stack);
-            SaveFile(L, newFilename);
-            ReadFile(L, newFilename);
-            Herb* herb = getHerb(L, name);
-            if (herb)
-                Print(herb);
-            else
-                cout << "修改失败" << endl;
-        }
-        else {
-            cout << "修改失败" << endl;
-        }
-        FreeList(L);
-        ModifyHerb();
-    }
-    else {
-        cout << "输入有误，请重新输入：" << endl;
-        ModifyHerb();
-    }
-}
 
 void SeqSearch() {
     cout << "输入选择：" << endl;
@@ -867,55 +720,99 @@ void createDecisionTree() {
 }
 
 void HerbADM() {
-    // 中药材基本信息的增加、删除与修改模块，调用对应的功能函数实现
-    int totalLength = 50;
-    int equalSignsOnEachSide = (totalLength - 42) / 2;
+    SqList L;
+    OperationStack stack;
 
+    // 初始化线性表和操作栈
+    InitList(L);
+    InitStack(stack);
 
-    for (int i = 0; i < totalLength; ++i) {
-        cout << "=";
+    string originFilename = "D:/Data-241110/herb.txt";
+    string newFilename = "D:/Data-241110/new_herb.txt";
+
+    while (true) {
+        cout << "输入选择：" << endl;
+        cout << "1. 中草药信息增加" << endl;
+        cout << "2. 中草药信息删除" << endl;
+        cout << "3. 中草药信息修改" << endl;
+        cout << "4. 撤销上次操作" << endl;
+        cout << "0. 返回" << endl;
+
+        char choice;
+        cin >> choice;
+
+        if (choice == '0') {
+            system("cls");
+            HerbManagement();
+            break;
+        }
+
+        // 只需要在操作完成时保存到文件
+        ReadFile(L, originFilename);
+        switch (choice) {
+        case '1':
+            if (InsertHerb(L, stack)) {
+                SaveFile(L, newFilename);
+                Print(L);
+            }
+            else {
+                cout << "增加失败" << endl;
+            }
+            break;
+        case '2':
+            char name[100];
+            cout << "请输入要删除的中草药名称：";
+            cin >> name;
+            if (DeleteHerb(L, name, stack)) {
+                SaveFile(L, newFilename);
+                cout << "删除成功" << endl;
+            }
+            else {
+                cout << "删除失败" << endl;
+            }
+            break;
+        case '3': {
+            char name_to_modi[100];
+            int n;
+            cout << "请输入要修改的药草名称：";
+            cin >> name_to_modi;
+            cout << "请输入归经数量：";
+            cin >> n;
+
+            // 限制输入归经数量
+            if (n <= 0 || n > 6) {
+                cout << "输入无效，请输入1-6之间的数字！" << endl;
+                continue;
+            }
+            vector<string> lines(n);
+            for (int i = 0; i < n; i++) {
+                cout << "请输入第" << i + 1 << "个归经：" << endl;
+                cin >> lines[i];
+            }
+            if (ModifyHerb(L, name_to_modi, lines.data(), n, stack)) {
+                SaveFile(L, newFilename);
+                cout << "修改成功" << endl;
+            }
+            else {
+                cout << "修改失败" << endl;
+            }
+            break;
+        }
+        case '4':
+            if (Undo(L, stack)) {
+                SaveFile(L, newFilename);
+            }
+            else {
+                cout << "没有可以撤销的操作！" << endl;
+            }
+            break;
+        default:
+            cout << "输入有误，请重新输入！" << endl;
+        }
     }
-    cout << endl;
 
-    cout << string(equalSignsOnEachSide, '=') << "=  1. 中药材信息增加                   =" << string(equalSignsOnEachSide, '=') << endl;
-    cout << string(equalSignsOnEachSide, '=') << "=  2. 中药材信息删除                   =" << string(equalSignsOnEachSide, '=') << endl;
-    cout << string(equalSignsOnEachSide, '=') << "=  3. 中药材信息修改                   =" << string(equalSignsOnEachSide, '=') << endl;
-    cout << string(equalSignsOnEachSide, '=') << "=  0. 返回                             =" << string(equalSignsOnEachSide, '=') << endl;
-
-    for (int i = 0; i < totalLength; ++i) {
-        cout << "=";
-    }
-    cout << endl;
-
-    char choice;
-    cout << "请输入你的选择：";
-    cin >> choice;
-
-    switch (choice) {
-    case '1':
-        system("cls");
-        cout << string(equalSignsOnEachSide, '=') << "=            中药材信息增加            =" << string(equalSignsOnEachSide, '=') << endl;
-        InsertHerb();
-        break;
-    case '2':
-        system("cls");
-        cout << string(equalSignsOnEachSide, '=') << "=            中药材信息删除            =" << string(equalSignsOnEachSide, '=') << endl;
-        DeleteHerb();
-        break;
-    case '3':
-        system("cls");
-        cout << string(equalSignsOnEachSide, '=') << "=            中药材信息修改            =" << string(equalSignsOnEachSide, '=') << endl;
-        ModifyHerb();
-        break;
-    case '0':
-        system("cls");
-        HerbManagement();
-        break;
-    default:
-        cout << "输入错误，请重新输入：" << endl;
-        HerbADM();
-        break;
-    }
+    // 程序结束时释放资源
+    FreeList(L);
 }
 
 void HerbSearch() {

@@ -1,6 +1,7 @@
 #pragma once
 #include<bits/stdc++.h>
 #define MAXSIZE 10000
+#define MAX_HISTORY 100
 #define m 300
 #define K 6
 using namespace std;

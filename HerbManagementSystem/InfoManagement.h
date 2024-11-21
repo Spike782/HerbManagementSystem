@@ -1,55 +1,90 @@
 #pragma once
 #include "herb_data_structure.h"
 
-// 操作撤回栈
-struct OperationStack {
-    SqList operation[10]; // 最多撤回五次操作
-    int top = 0;         // 栈顶指针，初始化为 0 表示空栈
+enum ActionType {
+    INSERT, // 插入操作
+    DELETE, // 删除操作
+    MODIFY  // 修改操作
 };
 
-// 初始化撤回栈
+struct Operation {
+    ActionType action; // 操作类型
+    Herb herb;         // 相关的中草药信息（对于 INSERT 和 DELETE）
+    Herb oldHerb;      // 修改前的中草药信息（仅适用于 MODIFY）
+    int position;      // 操作位置
+};
+
+// 操作栈
+struct OperationStack {
+    Operation operations[MAX_HISTORY]; // 存储操作
+    int top;                           // 栈顶指针，初始化为 -1 表示空栈
+};
+
+// 初始化操作栈
 void InitStack(OperationStack& S) {
-    S.top = 0;
+    S.top = -1;
 }
 
-// 判断栈满
-bool Isfull(OperationStack& S) {
-    return S.top == 10;
+// 判断栈是否为空
+bool IsEmpty(const OperationStack& S) {
+    return S.top == -1;
 }
 
-// 释放操作栈内存
-void FreeOperationStack(OperationStack& S) {
-    // 遍历操作栈中的每个SqList元素并释放其内存
-    for (int i = 0; i < S.top; i++) {
-        FreeList(S.operation[i]);
+// 判断栈是否已满
+bool IsFull(const OperationStack& S) {
+    return S.top == MAX_HISTORY - 1;
+}
+
+// 入栈操作
+bool Push(OperationStack& S, const Operation& op) {
+    if (IsFull(S)) {
+        return false; // 栈满
     }
-    S.top = 0;
-}
-
-//每次操作后更新撤回栈
-void UpdateOperation(SqList& L, OperationStack &S) {
-    if (Isfull(S)) {
-        cout << "操作栈满，此次操作未更新！"<<endl;
-        return;
-    }
-    SqList temp = L;
-    S.operation[S.top++] = temp;
-}
-
-// 撤销上一次操作
-bool Undo(SqList& L,OperationStack &S, string filename) {
-    if (S.top == 0) return 0;
-    
-    FreeList(L); //先清空列表
-    S.top--;
-
-    L = S.operation[S.top];
-    SaveFile(L, filename);
-    cout << "成功撤销！" << endl;
+    S.operations[++S.top] = op;
     return true;
 }
 
-bool InsertHerb(SqList& L) {
+// 出栈操作
+bool Pop(OperationStack& S, Operation& op) {
+    if (IsEmpty(S)) {
+        return false; // 栈空
+    }
+    op = S.operations[S.top--];
+    return true;
+}
+
+// 撤销上一次操作
+bool Undo(SqList& L, OperationStack& S) {
+    if (IsEmpty(S)) {
+        cout << "没有可撤销的操作。" << endl;
+        return false;
+    }
+
+    Operation lastOp;
+    Pop(S, lastOp);// 弹出操作记录
+
+    if (lastOp.action == INSERT) {
+        // 撤销插入：删除最后一个元素
+        L.length--;
+    }
+    else if (lastOp.action == DELETE) {
+        // 撤销删除：在指定位置插入
+        for (int i = L.length; i > lastOp.position; i--) {
+            L.elem[i] = L.elem[i - 1];
+        }
+        L.elem[lastOp.position] = lastOp.herb;
+        L.length++;
+    }
+    else if (lastOp.action == MODIFY) {
+        // 撤销修改：还原修改前的数据
+        L.elem[lastOp.position] = lastOp.oldHerb;
+    }
+
+    cout << "操作已撤销。" << endl;
+    return true;
+}
+
+bool InsertHerb(SqList& L, OperationStack& stack) {
     // 插入中药材信息，输入中药材的草药名、英文名、生长习性、繁殖方法、田间管理、病虫防治、采收加工、性味、归经、功效和功能主治信息
     // 如果插入成功，返回true，否则，返回false
     Herb temp;
@@ -102,10 +137,13 @@ bool InsertHerb(SqList& L) {
         type++;
     }
     L.elem[L.length++] = temp;
+    // 记录插入操作
+    Operation op = { INSERT, temp, L.length - 1 };
+    Push(stack, op);
     return true;
 }
 
-Herb* DeleteHerb(SqList& L, char* name) {
+Herb* DeleteHerb(SqList& L, char* name, OperationStack& stack) {
     // 根据中文名称删除指定中药材信息
     // 如果删除成功，返回指向该食材信息的指针，否则，返回NULL
     for (int i = 0; i < L.length; i++) {
@@ -115,6 +153,8 @@ Herb* DeleteHerb(SqList& L, char* name) {
                 L.elem[j] = L.elem[j + 1];
             }
             L.length--;
+            Operation op = { DELETE, deletedHerb,{}, i };
+            Push(stack, op);
             return &deletedHerb;
         }
     }
@@ -130,14 +170,14 @@ bool check(SqList& L, char* name) {
     return true;
 }
 
-bool ModifyHerb(SqList& L, char* name, string lines[], int n) {
+bool ModifyHerb(SqList& L, char* name, string lines[], int n, OperationStack& stack) {
     // 中药材归经信息修改，
     // 如果修改成功，返回true，否则，返回false
     for (int i = 0; i < L.length; i++) {
         if (strcmp(L.elem[i].name, name) == 0) {
-            
+
             Herb oldHerb = L.elem[i];
-            
+
             //清空原有的经归信息
             L.elem[i].channel_tropism_num = 0;
 
@@ -146,6 +186,9 @@ bool ModifyHerb(SqList& L, char* name, string lines[], int n) {
                 L.elem[i].channel_tropism[L.elem[i].channel_tropism_num++] = lines[j];
             }
             Herb newHerb = L.elem[i];
+            // 将修改操作记录到栈
+            Operation op = { MODIFY, newHerb, oldHerb, i };
+            Push(stack, op);
             return true;
         }
     }
@@ -164,3 +207,5 @@ Herb* getHerb(SqList& L, char* name) {
     }
     return NULL;
 }
+
+
