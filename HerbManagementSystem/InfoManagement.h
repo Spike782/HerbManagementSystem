@@ -1,6 +1,7 @@
 #pragma once
 #include "herb_data_structure.h"
 
+// 定义一个枚举类型ActionType，表示可能的操作类型
 enum ActionType {
     INSERT, // 插入操作
     DELETE, // 删除操作

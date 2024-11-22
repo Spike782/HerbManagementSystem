@@ -687,7 +687,7 @@ void PrimMST() {
 void createDecisionTree() {
     cout << "输入选择：" << endl;
     cout << "1. 基于决策树的分类分析" << endl;
-    cout << "0. 退回上一步" << endl;
+    cout << "0. 返回" << endl;
     char choiceD;
     cin >> choiceD;
     if (choiceD == '0') {
@@ -706,6 +706,7 @@ void createDecisionTree() {
 
         getchar();
         string herbName;
+        cout << "请输入一个草药的草药名：";
         cin >> herbName;
 
         FindClassDIS(BT, herbName);
@@ -729,6 +730,10 @@ void HerbADM() {
 
     string originFilename = "D:/Data-241110/herb.txt";
     string newFilename = "D:/Data-241110/new_herb.txt";
+
+    Herb* herb_to_dele;
+    Herb* herb_to_modi;
+    
 
     while (true) {
         cout << "输入选择：" << endl;
@@ -760,11 +765,14 @@ void HerbADM() {
             }
             break;
         case '2':
-            char name[100];
             cout << "请输入要删除的中草药名称：";
-            cin >> name;
-            if (DeleteHerb(L, name, stack)) {
+            char name_to_dele[100];
+            cin >> name_to_dele;
+            herb_to_dele = DeleteHerb(L, name_to_dele,stack);
+            if (herb_to_dele) {
                 SaveFile(L, newFilename);
+                system("cls");
+                Print(herb_to_dele);
                 cout << "删除成功" << endl;
             }
             else {
@@ -791,7 +799,11 @@ void HerbADM() {
             }
             if (ModifyHerb(L, name_to_modi, lines.data(), n, stack)) {
                 SaveFile(L, newFilename);
-                cout << "修改成功" << endl;
+                Herb* herb = getHerb(L, name_to_modi);
+                if (herb)
+                    Print(herb);
+                else
+                    cout << "修改失败" << endl;
             }
             else {
                 cout << "修改失败" << endl;
